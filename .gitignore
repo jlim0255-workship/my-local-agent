@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 .env
 .envrc
+
+.agents/*
+.claude/*

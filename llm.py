@@ -3,6 +3,7 @@ import sys
 import json
 from tools import TOOL_SCHEMAS, TOOLS
 from openai import OpenAI
+from skills import skills_prompt
 
 client = OpenAI(
     base_url=os.environ["BASE_URL"],
@@ -35,8 +36,15 @@ if __name__ == "__main__":
     user_input = input("Enter your prompt> ")
 
     message, usage = call_llm([
-        {"role": "system", "content": os.environ["SYSTEM_PROMPT"]},
-        {"role": "user", "content": user_input},
+        {
+            "role": "system", 
+            "content": os.environ["SYSTEM_PROMPT"]
+            .replace("{os.getcwd()}", os.getcwd())
+            .replace("{skills_prompt()}", skills_prompt())},
+        {
+            "role": "user", 
+            "content": user_input
+         },
     ])
     print("\nAgent: ", message.content, "\n")
     if message.tool_calls:
