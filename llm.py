@@ -1,37 +1,48 @@
 import os
 import sys
+import json
+from tools import TOOL_SCHEMAS, TOOLS
 from openai import OpenAI
+
 client = OpenAI(
     base_url=os.environ["BASE_URL"],
     api_key=os.environ["API_KEY"],
 )
 
-user_input = input("Enter your prompt>")
+def call_llm(messages):
+    response = client.chat.completions.create(
+        model=os.environ["MODEL"],
+        messages=messages,
+        tools=TOOL_SCHEMAS,
+    )
 
-SYSTEM_PROMPT = """
-You are a coding agent. Your job is to code. Always code.
-"""
+    message = response.choices[0].message
 
-response = client.chat.completions.create(
-    
-    model=os.environ["MODEL"],
-    messages=[
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_input}
-    ]
-)
+    completion_details = response.usage.completion_tokens_details
+    prompt_details = response.usage.prompt_tokens_details
 
-output = response.choices[0].message.content
+    usage = {
+        "prompt_tokens": response.usage.prompt_tokens,
+        "completion_tokens": response.usage.completion_tokens,
+        "reasoning_tokens": getattr(completion_details, "reasoning_tokens", None),
+        "cached_tokens": getattr(prompt_details, "cached_tokens", None),
+    }
 
-completion_details = response.usage.completion_tokens_details
-prompt_details = response.usage.prompt_tokens_details
+    return message, usage
 
-usage = {
-    "prompt_tokens": response.usage.prompt_tokens,
-    "completion_tokens": response.usage.completion_tokens,
-    "reasoning_tokens": getattr(completion_details, "reasoning_tokens", None),
-    "cached_tokens": getattr(prompt_details, "cached_tokens", None),
-}
 
-print("\nAgent: ", output, "\n")
-print(usage)
+if __name__ == "__main__":
+    user_input = input("Enter your prompt> ")
+
+    message, usage = call_llm([
+        {"role": "system", "content": os.environ["SYSTEM_PROMPT"]},
+        {"role": "user", "content": user_input},
+    ])
+    print("\nAgent: ", message.content, "\n")
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        args = json.loads(tool_call.function.arguments)
+        result = TOOLS[tool_call.function.name](**args)
+        print("Tool: ", tool_call.function.name, args)
+        print(result, "\n")
+        print(usage)
