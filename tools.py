@@ -1,7 +1,6 @@
 import subprocess
 
 from skills import read_skill
-from context import note_read
 
 def bash(command: str) -> str:
     """The function to execute bash command"""
@@ -12,7 +11,6 @@ def bash(command: str) -> str:
 
 def read_file(path: str) -> str:
     """Read a file and return its contents."""
-    note_read(path=path)
     with open(path) as f:
         return f.read()
 
