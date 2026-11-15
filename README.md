@@ -1,3 +1,6 @@
+# Local Claude Code
+A minimal 
+
 ## How to run?
 ```bash
 $env:UV_ENV_FILE = ".env" # set env variables
