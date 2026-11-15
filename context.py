@@ -5,7 +5,17 @@ It goes to the end of the message list so the prefix in front of it stays cached
 """
 
 import subprocess
+import os
 from datetime import datetime
+
+SEEN = {} # key: path, value: mtime, when the agent last read it?
+
+def note_read(path):
+    SEEN[path] = os.path.getmtime(path)
+
+def stale_files():
+    return [p for p, mtime in SEEN.items() if os.path.getmtime(p) != mtime]
+
 
 def git_branch():
     # subprocess.run() will execute this in terminal
@@ -14,6 +24,17 @@ def git_branch():
         capture_output=True, text=True
     )
     return result.stdout.strip() or "(detached)"
+
+def stale_note():
+    """Warn about files that changed on disk since the agent read them."""
+    changed = stale_files()
+    if not changed:
+        return ""
+    return (
+        "\n<system-reminder>\n"
+        "These files changed on disk since you read them. Read them again "
+        "before editing:\n" + "\n".join(changed) + "\n</system-reminder>"
+    )
 
 def reminder():
     """The block appended to the messages on every turn."""
